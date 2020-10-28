@@ -40,8 +40,8 @@
 
 */
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-/* - - - - - - - - - - INIT/DESTRUCT FUNCTION - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  INIT/DESTRUCT FUNCTION - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 static bool
 self_assert(struct int_array_data_analysis* iada) {
 
@@ -113,8 +113,8 @@ array_util_destruct(struct int_array_data_analysis* iada) {
     free(iada);
 }
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-/* - - - - - - - - - - MAX CLUSTER FUNCTIONS - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - MAX CLUSTER FUNCTIONS - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - - - - - - - - - - - - */
 static void
 array_util_print_max_cluster(struct int_array_max_cluster* clust) {
 
@@ -198,8 +198,8 @@ array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache
     pthread_mutex_unlock(&iada->lock_max_cluster);
 }
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-/* - - - - - - - - - - BASIC STATS RUN - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - BASIC STATS RUN - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 static void
 array_util_print_basic_stats(struct int_array_stats* stats) {
 
@@ -301,10 +301,8 @@ array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
     pthread_mutex_unlock(&iada->lock_stats);
 }
 
-
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-/* - - - - - - - - - - PRINT ALL ATTRIBUTES - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - PRINT ALL ATTRIBUTES - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 void
 array_util_print_all(struct int_array_data_analysis* iada) {
 
