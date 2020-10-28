@@ -13,25 +13,29 @@ main(void)
     //Do Util on Array for Data Analysis
     //int array[9] = {-2,1,-3,4,-1,2,1,-5,4};
     clock_t begin = clock();
-    array_util_max_size_cluster(iada);
+    array_util_max_size_cluster(iada, true);
     clock_t end = clock();
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-
     printf("\nTime Taken for Max Cluster: %f\n", time_spent);
 //    array_util_basic_stats(iada);
 //    array_util_sort(iada);
+    begin = clock();
+    array_util_basic_stats(iada, true);
+    end = clock();
+    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("\nTime Taken for Mean Median Mode: %f\n", time_spent);
 
     //Print all Data Analysis
     array_util_print_all(iada);
 
-    int y = 5;
-    int* yy = &y;
-    int** yyy = &yy;
+//    int y = 5;
+//    int* yy = &y;
+//    int** yyy = &yy;
 
-    printf("\n%p\n%p\n%p\n%p\n", &y, yy, &yy, yyy);
+//    printf("\n%p\n%p\n%p\n%p\n", &y, yy, &yy, yyy);
 
-    struct Point* p;
-    printf("\nP.x =>%p\n",p);
+//    struct Point* p;
+  //  printf("\nP.x =>%p\n",p);
     
     return 0;
 }
