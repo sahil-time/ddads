@@ -112,14 +112,21 @@ array_util_destruct(struct int_array_data_analysis* iada) {
     //Freeing the Member Structs - Rule of Thumb: Every Pointer in Member Struct and IADA is generally a Calloc'd
     if(iada->is_max_cluster_run) {
         free(iada->max_cluster);
+        iada->max_cluster = NULL;
     }
 
     if(iada->is_stats_run) {
         free(iada->stats->sorted_arr);
-        free(iada->stats);    
+        iada->stats->sorted_arr = NULL;
+        free(iada->stats);
+        iada->stats = NULL;
     }
 
+    //Make init = False so even if someone uses Memory after free (its possible and might work) assert will fail
+    iada->init = false;
+
     free(iada);
+    iada = NULL; //Statement not needed because 'iada' is a local variable not used by Client
 
     return IADA_E_EOK;
 }
@@ -160,6 +167,7 @@ array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache
     //Before allocating free previous calloc [ or else leak ]
     if(iada->is_max_cluster_run){
         free(iada->max_cluster);
+        iada->max_cluster = NULL;
     }
 
     //Init Max Cluster [ Before you calloc again make sure you free it ]
@@ -226,11 +234,15 @@ array_util_print_basic_stats(struct int_array_stats* stats) {
     printf("\n\tArray Stats Mean: %d \
            \n\tArray Stats Max Number: %d | Index: %d \
            \n\tArray Stats Min Number: %d | Index: %d \
-           \n\tArray Stats Range: %lld", 
+           \n\tArray Stats Range: %lld \
+           \n\tArray Median: %d \
+           \n\tArray Mode: %d", 
            stats->mean,
            stats->max_num, stats->max_num_index,
            stats->min_num, stats->min_num_index,
-           stats->range);
+           stats->range,
+           stats->median,
+           stats->mode);
 }
 
 //Mean etc.
@@ -270,10 +282,13 @@ array_util_basic_stats_calc_mean(struct int_array_data_analysis* iada) {
 
 //Median Mode
 static void
+array_util_sort_pre_algo
+
+static void
 array_util_basic_stats_calc_median_mode(struct int_array_data_analysis* iada) {
 
     //Check the kind of data and see if we need Comparison Sort or Non-Comparison Sort?
-//    array_util_sort_pre_algo(
+    //array_util_sort_pre_algo(iada->size, iada->stats->min_num, iada->stats->max_num,
 
 
 }
@@ -295,7 +310,9 @@ array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
     //Before allocating free previous calloc [ or else leak ] - But quick calls on this function on same IADA will SegFault
     if(iada->stats){
         free(iada->stats->sorted_arr);
+        iada->stats->sorted_arr = NULL;
         free(iada->stats);
+        iada->stats = NULL;
     }
 
     //Init Array Stats
