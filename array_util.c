@@ -40,8 +40,8 @@
 
 */
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  INIT/DESTRUCT FUNCTION - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - INIT/DESTRUCT FUNCTION - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 static bool
 self_assert(struct int_array_data_analysis* iada) {
 
@@ -85,7 +85,6 @@ array_util_init(int const* data, const int size) {
 
     //Init Mutexes
     pthread_mutex_init(&iada->lock_max_cluster, NULL);
-    pthread_mutex_init(&iada->lock_sorted_arr, NULL);
     pthread_mutex_init(&iada->lock_stats, NULL);
 
     iada->init = true;
@@ -94,7 +93,7 @@ array_util_init(int const* data, const int size) {
 }
 
 //Init-Destruct are NOT Synced. Can cause Producer-Consumer Problem [ Check in UT ]
-void
+int
 array_util_destruct(struct int_array_data_analysis* iada) {
 
     //Check if Malloc has been done ( We do NOT want to free random memory that might not be on Heap )
@@ -102,19 +101,31 @@ array_util_destruct(struct int_array_data_analysis* iada) {
 
     if(iada == NULL) {
         fprintf(stderr, "\nError: Object cannot be NULL");
-        return;
+        return IADA_E_INIT;
     }
 
     if(!iada->init) { //Can Seg-fault if iada is NOT-NULL but pointing to random memory as de-reference will fail
         fprintf(stderr, "\nError: Object not initialized");
-        return;
+        return IADA_E_INIT;
+    }
+
+    //Freeing the Member Structs - Rule of Thumb: Every Pointer in Member Struct and IADA is generally a Calloc'd
+    if(iada->is_max_cluster_run) {
+        free(iada->max_cluster);
+    }
+
+    if(iada->is_stats_run) {
+        free(iada->stats->sorted_arr);
+        free(iada->stats);    
     }
 
     free(iada);
+
+    return IADA_E_EOK;
 }
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - MAX CLUSTER FUNCTIONS - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - MAX CLUSTER FUNCTIONS - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 static void
 array_util_print_max_cluster(struct int_array_max_cluster* clust) {
 
@@ -132,22 +143,22 @@ array_util_print_max_cluster(struct int_array_max_cluster* clust) {
            clust->cluster_size);
 }
 
-void
+int
 array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache) {
    
-    if(!self_assert(iada)) return;
+    if(!self_assert(iada)) return IADA_E_INIT;
 
     pthread_mutex_lock(&iada->lock_max_cluster);
  
     //Check if use_cache = True
     if(use_cache) {
         if(iada->is_max_cluster_run) {
-            return;
+            return IADA_E_CACHE;
         }
     }
     
     //Before allocating free previous calloc [ or else leak ]
-    if(iada->max_cluster){
+    if(iada->is_max_cluster_run){
         free(iada->max_cluster);
     }
 
@@ -155,6 +166,7 @@ array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache
     iada->max_cluster = (struct int_array_max_cluster*)calloc(1, sizeof(struct int_array_max_cluster));
     if(iada->max_cluster == NULL) {
         perror("Error");
+        return IADA_E_CALLOC;
     }
 
     //New variables to avoid name cluttering in algo
@@ -196,10 +208,12 @@ array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache
     iada->is_max_cluster_run = true;
 
     pthread_mutex_unlock(&iada->lock_max_cluster);
+
+    return IADA_E_EOK;
 }
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - BASIC STATS RUN - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - BASIC STATS FUNCTIONS - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 static void
 array_util_print_basic_stats(struct int_array_stats* stats) {
 
@@ -219,6 +233,7 @@ array_util_print_basic_stats(struct int_array_stats* stats) {
            stats->range);
 }
 
+//Mean etc.
 static void
 array_util_basic_stats_calc_mean(struct int_array_data_analysis* iada) {
 
@@ -253,30 +268,33 @@ array_util_basic_stats_calc_mean(struct int_array_data_analysis* iada) {
     iada->stats->range = (long long)max - (long long)min;
 }
 
+//Median Mode
 static void
 array_util_basic_stats_calc_median_mode(struct int_array_data_analysis* iada) {
 
-    //Check if Sorted or else run it
+    //Check the kind of data and see if we need Comparison Sort or Non-Comparison Sort?
+//    array_util_sort_pre_algo(
 
 
 }
 
-void
+int
 array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
 
-    if(!self_assert(iada)) return;
+    if(!self_assert(iada)) return IADA_E_INIT;
 
     pthread_mutex_lock(&iada->lock_stats);
 
     //Check if use_cache = True
     if(use_cache) {
         if(iada->is_stats_run) {
-            return;
+            return IADA_E_CACHE;
         }
     }
     
     //Before allocating free previous calloc [ or else leak ] - But quick calls on this function on same IADA will SegFault
     if(iada->stats){
+        free(iada->stats->sorted_arr);
         free(iada->stats);
     }
 
@@ -284,6 +302,7 @@ array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
     iada->stats = (struct int_array_stats*)calloc(1, sizeof(struct int_array_stats));
     if(iada->stats == NULL) {
         perror("Error");
+        return IADA_E_CALLOC;
     }
 
     //Calculate Mean, min and max
@@ -299,10 +318,12 @@ array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
     iada->is_stats_run = true;
 
     pthread_mutex_unlock(&iada->lock_stats);
+
+    return IADA_E_EOK;
 }
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - PRINT ALL ATTRIBUTES - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - PRINT ALL MEMBER STRUCTS - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 void
 array_util_print_all(struct int_array_data_analysis* iada) {
 
@@ -314,10 +335,6 @@ array_util_print_all(struct int_array_data_analysis* iada) {
 
     if(iada->is_max_cluster_run) {
         array_util_print_max_cluster(iada->max_cluster);
-    }
-
-    if(iada->is_sorted_arr_run) {
-
     }
 
     if(iada->is_stats_run) {
