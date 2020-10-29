@@ -20,10 +20,10 @@ main(void)
 //    array_util_basic_stats(iada);
 //    array_util_sort(iada);
     begin = clock();
-    array_util_basic_stats(iada, true);
+    int rc = array_util_basic_stats(iada, true);
     end = clock();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("\nTime Taken for Mean Median Mode: %f\n", time_spent);
+    printf("\nTime Taken for Mean Median Mode: %f %d\n", time_spent,rc);
 
     //Print all Data Analysis
     array_util_print_all(iada);
