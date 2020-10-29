@@ -6,15 +6,19 @@
 
 #include <stdbool.h>
 
+//Error Cases
+enum iada_error {
+    IADA_E_EOK = 0,
+    IADA_E_CACHE = 0,
+    IADA_E_INIT = -1,
+    IADA_E_CALLOC = -2
+};
+
 //For Client use - DO NOT CHANGE THESE STRUCTS - Only used for Typecasting
 struct client_int_array_max_cluster {
     int cluster_index_start;
     int cluster_index_end;
     int cluster_size;
-};
-
-struct client_int_array_sort {
-    int* sorted_arr;
 };
 
 struct client_int_array_stats {
@@ -26,6 +30,7 @@ struct client_int_array_stats {
     int min_num;
     int min_num_index;
     long long range;
+    int* sorted_arr;
 };
 
 /*
@@ -39,7 +44,7 @@ struct int_array_data_analysis* array_util_init(int const* array, const int size
 /*
   Destroying the Object
 */
-void array_util_destruct(struct int_array_data_analysis* iada);
+int array_util_destruct(struct int_array_data_analysis* iada);
 
 /*
   Find the max size of cluster in a given array [ also called max sub array problem ]
@@ -47,22 +52,22 @@ void array_util_destruct(struct int_array_data_analysis* iada);
   Time Complexity = O(n)
   
    @parameters
->  Pointer to Array (not **), size of array, and struct to fill values
+>  Provide Object
 >  use_cache to return cached value if any
 */
-void array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache);
+int array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache);
 
 /*
   Calculate mean, median, mode, range [ basic data analysis ]
   For Mean:
     Space Complexity = O(1)
     Time Complexity = O(n)
-  For Median:
-    Sort List?
-    Space Complexity = O(n)
-
+  For Median / Mode:
+    Sort List? Yes! 
+    Space Complexity = Sorting
+    Time Complexity = Complexity of Sorting + O(n) to find Median and Mode
 */
-void array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache);
+int array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache);
 
 /*
   Print all Data Analysis attributes
