@@ -8,8 +8,8 @@
 
 //Error Cases
 enum iada_error {
-    IADA_E_EOK = 0,
-    IADA_E_CACHE = 0,
+    IADA_E_EOK = 0, //EOK
+    IADA_E_CACHE = 0,	//Not an error [ returning cached value ]
     IADA_E_INIT = -1,
     IADA_E_CALLOC = -2
 };
