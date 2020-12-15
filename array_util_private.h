@@ -19,6 +19,12 @@
 #include <stdbool.h> 
 #include <pthread.h> 
 
+#include "self_balancing_bst_public.h"
+#include "integer_arr_sorting_public.h"
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - IADA STRUCTURES - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
 struct int_array_max_cluster {
     int cluster_index_start;
     int cluster_index_end;

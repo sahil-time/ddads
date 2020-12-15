@@ -1,0 +1,10 @@
+<config>
+  <set id="1">
+    <pattern>*.aaa.com</pattern>
+    <pattern>*.bb.cc/*</pattern>
+    <pattern>www.*.com</pattern>
+  </set>
+  <set id="2">
+    <pattern>www.*.com</pattern>
+  </set>
+</config>

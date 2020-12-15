@@ -46,12 +46,12 @@ static bool
 self_assert(struct int_array_data_analysis* iada) {
 
     if(iada == NULL) {
-        fprintf(stderr, "\nError: Struct Pointer cannot be NULL");
+        fprintf(stderr, "\nERROR: %p | Struct Pointer cannot be NULL", iada);
         return false;
     }
 
     if(!iada->init) {
-        fprintf(stderr, "\nError: Init not done!");
+        fprintf(stderr, "\nERROR: %p | Init not done", iada);
         return false;
     }
 
@@ -92,22 +92,11 @@ array_util_init(int const* data, const int size) {
     return iada;
 }
 
-//Init-Destruct are NOT Synced. Can cause Producer-Consumer Problem [ Check in UT ]
+//Init-Destruct are NOT Synced. Can cause Producer-Consumer Problem [ Check in UT ]. So should we move to Semaphores?
 int
 array_util_destruct(struct int_array_data_analysis* iada) {
 
-    //Check if Malloc has been done ( We do NOT want to free random memory that might not be on Heap )
-    //Best is to check if iada->init  == true
-
-    if(iada == NULL) {
-        fprintf(stderr, "\nError: Object cannot be NULL");
-        return IADA_E_INIT;
-    }
-
-    if(!iada->init) { //Can Seg-fault if iada is NOT-NULL but pointing to random memory as de-reference will fail
-        fprintf(stderr, "\nError: Object not initialized");
-        return IADA_E_INIT;
-    }
+    if(!self_assert(iada)) return IADA_E_INIT;
 
     //Freeing the Member Structs - Rule of Thumb: Every Pointer in Member Struct and IADA is generally a Calloc'd
     if(iada->is_max_cluster_run) {
@@ -122,7 +111,7 @@ array_util_destruct(struct int_array_data_analysis* iada) {
         iada->stats = NULL;
     }
 
-    //Make init = False so even if someone uses Memory after free (its possible and might work) assert will fail
+    //Make init = False so even if someone uses Memory after free (Wait, what!?...its possible and might work) self_assert will fail
     iada->init = false;
 
     free(iada);
@@ -153,7 +142,7 @@ array_util_print_max_cluster(struct int_array_max_cluster* clust) {
 int
 array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache) {
    
-    if(!self_assert(iada)) return IADA_E_INIT;
+    if(!self_assert(iada)) return IADA_E_INIT; //The reason this is outside is because if 'iada' is NULL, pthread lock will Seg Fault
 
     pthread_mutex_lock(&iada->lock_max_cluster);
  
@@ -232,17 +221,17 @@ array_util_print_basic_stats(struct int_array_stats* stats) {
 
     printf("\n");
     printf("\n\tArray Stats Mean: %d \
-           \n\tArray Stats Max Number: %d | Index: %d \
-           \n\tArray Stats Min Number: %d | Index: %d \
-           \n\tArray Stats Range: %lld \
-           \n\tArray Median: %d \
-           \n\tArray Mode: %d", 
-           stats->mean,
-           stats->max_num, stats->max_num_index,
-           stats->min_num, stats->min_num_index,
-           stats->range,
-           stats->median,
-           stats->mode);
+            \n\tArray Stats Max Number: %d | Index: %d \
+            \n\tArray Stats Min Number: %d | Index: %d \
+            \n\tArray Stats Range: %lld \
+            \n\tArray Median: %d \
+            \n\tArray Mode: %d", 
+            stats->mean,
+            stats->max_num, stats->max_num_index,
+            stats->min_num, stats->min_num_index,
+            stats->range,
+            stats->median,
+            stats->mode);
 }
 
 //Mean etc.
@@ -281,22 +270,32 @@ array_util_basic_stats_calc_mean(struct int_array_data_analysis* iada) {
 }
 
 //Median Mode
-static void
-array_util_sort_pre_algo
+static int
+array_util_sort_pre_algo(int size, int min, int max) {
+
+    return IADA_SORTING_QUICK;
+}
 
 static void
 array_util_basic_stats_calc_median_mode(struct int_array_data_analysis* iada) {
 
+    int rc = IADA_E_EOK;
+
     //Check the kind of data and see if we need Comparison Sort or Non-Comparison Sort?
-    //array_util_sort_pre_algo(iada->size, iada->stats->min_num, iada->stats->max_num,
+    int sort_algo = array_util_sort_pre_algo(iada->size, iada->stats->min_num, iada->stats->max_num);
 
+    //Copy out the whole IADA Data into new array, pointed to by iada->stats->sorted_arr and pass to Sort function
+    //rc = interger_arr_sorting(iada->stats->sorted_arr, sort_algo, range);//range for comparison sort
 
+    //Calculate Median and Mode
 }
 
 int
 array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
 
-    if(!self_assert(iada)) return IADA_E_INIT;
+    if(!self_assert(iada)) return IADA_E_INIT; //The reason this is outside is because if 'iada' is NULL, pthread lock will Seg Fault
+
+    //What if IADA becomes NULL here? Need Binary Semaphores PER functionality, and we can remove Mutexes altogether.
 
     pthread_mutex_lock(&iada->lock_stats);
 
