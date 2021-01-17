@@ -1,0 +1,102 @@
+					POSIX ALGG
+
+sahisha2:> valgrind --leak-check=full url posix configuration.xml urls.txt
+==98460== Memcheck, a memory error detector
+==98460== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==98460== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==98460== Command: url posix configuration.xml urls.txt
+==98460== 
+
+
+www.aaa.com
+|____ ID: 1
+      |____ *.aaa.com
+      |____ www.*.com
+|____ ID: 2
+      |____ www.*.com
+
+
+aa.bb.cc/ddx/eee
+|____ ID: 1
+      |____ *.bb.cc/*
+|____ ID: 2
+
+
+www.abc.com
+|____ ID: 1
+      |____ www.*.com
+|____ ID: 2
+      |____ www.*.com
+
+
+xx.bb.cc/ddd
+|____ ID: 1
+      |____ *.bb.cc/*
+|____ ID: 2
+
+
+url1000000.com/path999
+|____ ID: 1
+|____ ID: 2
+
+==98460== 
+==98460== HEAP SUMMARY:
+==98460==     in use at exit: 0 bytes in 0 blocks
+==98460==   total heap usage: 1,535 allocs, 1,535 frees, 288,611 bytes allocated
+==98460== 
+==98460== All heap blocks were freed -- no leaks are possible
+==98460== 
+==98460== For lists of detected and suppressed errors, rerun with: -s
+==98460== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+					SELF ALGO
+
+sahisha2:> valgrind url self configuration.xml urls.txt 
+==98481== Memcheck, a memory error detector
+==98481== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==98481== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==98481== Command: url self configuration.xml urls.txt
+==98481== 
+
+
+www.aaa.com
+|____ ID: 1
+      |____ *.aaa.com
+      |____ www.*.com
+|____ ID: 2
+      |____ www.*.com
+
+
+aa.bb.cc/ddx/eee
+|____ ID: 1
+      |____ *.bb.cc/*
+|____ ID: 2
+
+
+www.abc.com
+|____ ID: 1
+      |____ www.*.com
+|____ ID: 2
+      |____ www.*.com
+
+
+xx.bb.cc/ddd
+|____ ID: 1
+      |____ *.bb.cc/*
+|____ ID: 2
+
+
+url1000000.com/path999
+|____ ID: 1
+|____ ID: 2
+
+==98481== 
+==98481== HEAP SUMMARY:
+==98481==     in use at exit: 0 bytes in 0 blocks
+==98481==   total heap usage: 143 allocs, 143 frees, 60,912 bytes allocated
+==98481== 
+==98481== All heap blocks were freed -- no leaks are possible
+==98481== 
+==98481== For lists of detected and suppressed errors, rerun with: -s
+==98481== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+

@@ -21,6 +21,11 @@ LIMITATIONS:
    >  If you want to print the DP Matrix please make PRINT 1 above. Give a small input as it can flood the screen
    >  Used help from Stackoverflow and a DP problem on youtube
 
+IMPROVEMENTS:
+
+   > Traverse tree once and then make it Linear search as opposed to recursive function calls to avoid Stack Overflow BUT I think max stack frames = 2
+     because its not really a Tree structure, its more like LL with a child attribute that is also a LL, so at max you will hae 2 stack frames
+
 */
 
 //Forward Declarations
@@ -78,7 +83,7 @@ int main(int argc, char** argv) {
 //Read URL's Line by Line and Pattern match the whole XML [ brute force can be made better ]
     printf("\n");
     while ((read = getline(&url, &len, urls_fp)) != -1) {
-        printf("%s", url);
+        printf("\n%s", url);
         run(root_element, url, algo_self);
         printf("\n");
     }
@@ -102,22 +107,32 @@ int main(int argc, char** argv) {
 void run(xmlNode* a_node, char* url, bool algo_self) {
 
     xmlNode* cur_node = NULL;
+    xmlChar* prop = NULL;
+    xmlChar* content = NULL;
 
     for (cur_node = a_node; cur_node; cur_node = cur_node->next) {
         if (cur_node->type == XML_ELEMENT_NODE) {
 
             if (!strcmp((char*)cur_node->name, "set")) {
-                printf("|____ ID: %s\n", xmlGetProp(cur_node, (xmlChar*)"id"));
+                prop = xmlGetProp(cur_node, (xmlChar*)"id");
+
+                printf("|____ ID: %s\n", prop);
+
+                xmlFree(prop);
+                prop = NULL; //Make NULL after you free, just good practice to avoid double free bugs
             }
 
             if (!strcmp((char*)cur_node->name, "pattern")) {
+                content = xmlNodeGetContent(cur_node);
 
                 //Can be optimized, do not need to check each time, can be done at init time
-                bool match = algo_self ? pattern_match(url, (char*)xmlNodeGetContent(cur_node)) : posix_regex(url, (char*)xmlNodeGetContent(cur_node));
-
+                bool match = algo_self ? pattern_match(url, (char*)content) : posix_regex(url, (char*)content);
                 if(match) {
-                    printf("      |____ %s\n", xmlNodeGetContent(cur_node));
+                    printf("      |____ %s\n", content);
                 }
+
+                xmlFree(content);
+                content = NULL;
             }
         } 
 
@@ -127,18 +142,143 @@ void run(xmlNode* a_node, char* url, bool algo_self) {
 
 //=============================================== POSIX ALGORITHM ===============================================
 
+//Util function to create substring at first occurence of 'ch'
+static void substring_char(char* string, char* substr1, char* substr2, char ch) {
+
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    bool pre_ch = true;
+
+    while((string[i] != '\0') && (string[i] != '\n')) {
+
+        if((pre_ch) && (string[i] == ch)) {
+            pre_ch = false;
+            i++;
+        }
+
+        if(pre_ch) {
+            substr1[j] = string[i];
+            j++;
+        } else {
+            substr2[k] = string[i];
+            k++;
+        }
+
+        i++;
+    }
+
+    substr1[j] = '\0';
+    substr2[k] = '\0';
+}
+
+//Add escape to all Special characters i.e. '.' and '/' here. For '*' make it '.*'
+static void dos_to_regex(char* pattern) {
+
+    if(!strlen(pattern)) return;
+
+    char* temp = (char*)malloc(2*strlen(pattern) + 1); //1 for '\0'
+
+    int i = 0;
+    int k = 0;
+
+    //Add all special cases here
+    while(pattern[i] != '\0') {
+        if((pattern[i] == '.') || (pattern[i] == '/')) {
+            temp[k++] = '\\';
+            temp[k++] = pattern[i];
+        } else if(pattern[i] == '*') {
+            temp[k++] = '.';
+            temp[k++] = pattern[i];
+        } else {
+            temp[k++] = pattern[i];
+        }
+
+        i++;
+    }
+
+    temp[k] = '\0';
+
+    strcpy(pattern, temp);
+
+    free(temp);
+}
+
 bool posix_regex(char* url, char* pattern) {
 
     regex_t regex;
-    int reti;
+    int ulen = strlen(url);
+    int plen = strlen(pattern);
+    char buffer[100];
 
-    reti = regcomp(&regex, pattern, 0);
+    //Split URL into Host and Path name
+    char* host =         (char*)malloc(ulen);
+    char* host_pattern = (char*)malloc(2*plen);
+    char* path =         (char*)malloc(ulen);
+    char* path_pattern = (char*)malloc(2*plen);
 
-    reti = regexec(&regex, url, 0, NULL, 0);
+    //Substring at '/'
+    substring_char(url, host, path, '/');
+    substring_char(pattern, host_pattern, path_pattern, '/');
+
+    //Convert pattern to Regex pattern
+    dos_to_regex(host_pattern);
+    dos_to_regex(path_pattern);
+
+    //Run Regex 
+    int reti_host = 1;
+    int reti_path = 1;
+
+    reti_host = regcomp(&regex, host_pattern, 0);
+    if(reti_host) {
+        regerror(reti_host, &regex, buffer, 100);
+        fprintf(stderr, "Error: Host Regex init failed - %s\n", buffer);
+        goto clean;
+    }
+
+    reti_host = regexec(&regex, host, 0, NULL, 0);
+    if(reti_host) {
+//        regerror(reti_host, &regex, buffer, 100);
+//        fprintf(stderr, "Error: Host Regex pattern match failed - %s\n", buffer);
+        goto clean;
+    }
 
     regfree(&regex);
 
-    return !reti;
+    //If path exists, 
+    if(strlen(path) || strlen(path_pattern)) {
+
+        if((strlen(path) == 0) || (strlen(path_pattern) == 0)) goto clean;
+
+        reti_path = regcomp(&regex, path_pattern, 0); 
+        if(reti_path) {
+            regerror(reti_path, &regex, buffer, 100);
+            fprintf(stderr, "Error: Path Regex init failed - %s\n", buffer);
+            goto clean;
+        }
+
+        reti_path = regexec(&regex, path, 0, NULL, 0);
+        if(reti_path) {
+//           regerror(reti_path, &regex, buffer, 100);
+//           fprintf(stderr, "Error: Path Regex pattern match failed - %s\n", buffer);
+            goto clean;
+        }
+
+    } else {
+        reti_path = 0;
+    }
+
+//Cleanup
+clean:
+//    printf("\n-----Pattern: %s, Reti Host: %d, Reti Path: %d\n-----host: %s, path: %s\n", pattern, reti_host, reti_path, host, path);
+
+    free(host);
+    free(host_pattern);
+    free(path);
+    free(path_pattern);
+    regfree(&regex);
+
+    return ((!reti_host) && (!reti_path));
 }
 
 //=============================================== SELF ALGORITHM ===============================================
@@ -146,10 +286,10 @@ bool posix_regex(char* url, char* pattern) {
 //Send normalized pattern i.e. if multiple * together, make them into 1
 bool pattern_match(char* url, char* pattern) {
 
-    int ulen = strlen(url) - 1; //Because url is an array so ends in \0
+    int ulen = strlen(url) - 1; //Because url getline array so ends in \n\0
     int plen = strlen(pattern);
 
-    //If URL and pattern arent too big it will not Stackoverflow, since they are strings, this is a reasonable assumption?
+    //If URL and pattern arent too big it will not Stackoverflow, since they are strings, this is a reasonable assumption!
     bool dp_matrix[ulen + 1][plen + 1];	//Using VLA's. Is that fine? Wont work on old C standard
 
     //Do the 0th case first
@@ -161,6 +301,7 @@ bool pattern_match(char* url, char* pattern) {
     for(int i = 1; i <= ulen; i++) {
         dp_matrix[i][0] = 0;
     }
+
     for(int j = 1; j <= plen; j++) {
         dp_matrix[0][j] = 0;
     } 
@@ -184,7 +325,7 @@ bool pattern_match(char* url, char* pattern) {
                 }
 
             } else if(pattern[j - 1] == '*') {
-                if((hostname) && (url[i - 1] == '/')) { //Special handling
+                if((hostname) && (url[i - 1] == '/')) { //Special handling - "dont match * to / in the hostname"
                     dp_matrix[i][j] = 0;
                     continue;
                  }
