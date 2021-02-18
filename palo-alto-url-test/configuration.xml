@@ -3,6 +3,7 @@
     <pattern>*.aaa.com</pattern>
     <pattern>*.bb.cc/*</pattern>
     <pattern>www.*.com</pattern>
+    <pattern>pat.com</pattern>
   </set>
   <set id="2">
     <pattern>www.*.com</pattern>

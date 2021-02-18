@@ -1,6 +1,14 @@
 #ifndef __ARRAY_UTIL_DATASET_H__
 #define __ARRAY_UTIL_DATASET_H__
 
+#ifdef 1
+
+#define DATA_SIZE 10
+
+const int DATA[DATA_SIZE] = { 15, 17, 12, 3, 1, 7, 8, 123, 8, 15 };
+
+#else
+
 #define DATA_SIZE 10000
 
 const int DATA[DATA_SIZE] = {
@@ -10006,4 +10014,5 @@ const int DATA[DATA_SIZE] = {
 36959,
 };
 
+#endif
 #endif

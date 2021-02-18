@@ -178,9 +178,12 @@ static void dos_to_regex(char* pattern) {
     if(!strlen(pattern)) return;
 
     char* temp = (char*)malloc(2*strlen(pattern) + 1); //1 for '\0'
+    int len = strlen(pattern);
 
     int i = 0;
     int k = 0;
+
+    if(pattern[0] != '*') temp[k++] = '^';
 
     //Add all special cases here
     while(pattern[i] != '\0') {
@@ -197,6 +200,7 @@ static void dos_to_regex(char* pattern) {
         i++;
     }
 
+    if(pattern[len - 1] != '*') temp[k++] = '$';
     temp[k] = '\0';
 
     strcpy(pattern, temp);
@@ -224,6 +228,9 @@ bool posix_regex(char* url, char* pattern) {
     //Convert pattern to Regex pattern
     dos_to_regex(host_pattern);
     dos_to_regex(path_pattern);
+
+//    printf("\nLOTR:%s\n", host_pattern);
+//    printf("\nLOTR:%s\n", path_pattern);
 
     //Run Regex 
     int reti_host = 1;

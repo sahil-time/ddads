@@ -30,6 +30,8 @@ main(void)
     //Print all Data Analysis
     array_util_print_all(iada);
 
+    self_balancing_bst_insert(DATA, DATA_SIZE);
+
 //    int y = 5;
 //    int* yy = &y;
 //    int** yyy = &yy;
