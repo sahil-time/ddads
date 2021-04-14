@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "error.h"                                                                                                                                                                      
 #include "array_util_private.h"
 #include "array_util_public.h" //Just to check Function Signatures given to Client against the Implementation Signatures
 
@@ -37,6 +38,7 @@
 	   > Are they re-entrant [ do NOT work with per Thread data or Locks ]
 	   > Are they thread safe [ do NOT work on Global data, just on local data ]
 	   > Identify Critical regions where you need Locking [ Avoid if possible ]
+	   > Before EVERY (even the error ones) 'return' in a function, UNLOCK the mutex
 
 */
 
@@ -96,7 +98,7 @@ array_util_init(int const* data, const int size) {
 int
 array_util_destruct(struct int_array_data_analysis* iada) {
 
-    if(!self_assert(iada)) return IADA_E_INIT;
+    if(!self_assert(iada)) return E_INIT;
 
     //Freeing the Member Structs - Rule of Thumb: Every Pointer in Member Struct and IADA is generally a Calloc'd
     if(iada->is_max_cluster_run) {
@@ -117,7 +119,7 @@ array_util_destruct(struct int_array_data_analysis* iada) {
     free(iada);
     iada = NULL; //Statement not needed because 'iada' is a local variable not used by Client
 
-    return IADA_E_EOK;
+    return E_EOK;
 }
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -149,6 +151,7 @@ array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache
     //Check if use_cache = True
     if(use_cache) {
         if(iada->is_max_cluster_run) {
+            pthread_mutex_unlock(&iada->lock_max_cluster);
             return IADA_E_CACHE;
         }
     }
@@ -163,6 +166,7 @@ array_util_max_size_cluster(struct int_array_data_analysis* iada, bool use_cache
     iada->max_cluster = (struct int_array_max_cluster*)calloc(1, sizeof(struct int_array_max_cluster));
     if(iada->max_cluster == NULL) {
         perror("Error");
+        pthread_mutex_unlock(&iada->lock_max_cluster);
         return IADA_E_CALLOC;
     }
 
@@ -297,11 +301,12 @@ array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
 
     //What if IADA becomes NULL here? Need Binary Semaphores PER functionality, and we can remove Mutexes altogether.
 
-    pthread_mutex_lock(&iada->lock_stats);
+    pthread_mutex_lock(&(iada->lock_stats));
 
     //Check if use_cache = True
     if(use_cache) {
         if(iada->is_stats_run) {
+            pthread_mutex_unlock(&iada->lock_stats);
             return IADA_E_CACHE;
         }
     }
@@ -318,6 +323,7 @@ array_util_basic_stats(struct int_array_data_analysis* iada, bool use_cache) {
     iada->stats = (struct int_array_stats*)calloc(1, sizeof(struct int_array_stats));
     if(iada->stats == NULL) {
         perror("Error");
+        pthread_mutex_unlock(&iada->lock_stats);
         return IADA_E_CALLOC;
     }
 

@@ -14,6 +14,7 @@ enum iada_error {
     IADA_E_CALLOC = -2
 };
 
+#if 0
 //For Client use - DO NOT CHANGE THESE STRUCTS - Only used for Typecasting
 struct client_int_array_max_cluster {
     int cluster_index_start;
@@ -32,6 +33,7 @@ struct client_int_array_stats {
     long long range;
     int* sorted_arr;
 };
+#endif
 
 /*
   Creating an Object for the data and adding meta-data that will store the result of data analysis on the data.
