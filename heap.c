@@ -472,18 +472,18 @@ get_heap_size(struct heap* hp) {
 .
 . Heapsort runs in O(nlogn)
 .
-. Assumption: size of array is same as curr_size in heap
+. Assumption: size of dst_array is same/or greater as curr_size in heap
 .
 ****************************************************************************************************************************************************/
 
 int
-heap_sort(struct heap* hp, int* array, int size) {
+heap_sort(struct heap* hp, int* dst_array, int size) {
 
 #define ERROR	"\nError:   (heapsort) => "
 
     if(!self_assert(hp)) return E_INIT;
 
-    if(array == NULL) {
+    if(dst_array == NULL) {
         fprintf(stderr, "%sArray cannot be NULL", ERROR); 
         return E_INVAL_PARAM;
     }
@@ -516,7 +516,7 @@ heap_sort(struct heap* hp, int* array, int size) {
 
     memcpy(hp_arr, hp->array, hp_size*sizeof(int));
 
-    //heap has been copied into new temporary memory, now we do NOT need to lock the heap structure
+    //heap has been copied into new temporary memory, now we do NOT need to lock the heap structure...so Unlocking
     pthread_mutex_unlock(&(hp->lock_heap));
 
     //If it is a Min-Heap, convert to a Max-Heap [ O(n) ]
@@ -531,7 +531,7 @@ heap_sort(struct heap* hp, int* array, int size) {
     for(int i = 0; i < hp_size; i++) {
 
         //if array goes OOB it can seg-fault
-        array[last] = hp_arr[0];
+        dst_array[last] = hp_arr[0];
         hp_arr[0] = hp_arr[last];
         heapify(hp_arr, last + 1, 0, MAX_HEAP);
         last--;
