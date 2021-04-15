@@ -3,10 +3,13 @@
 
 #include "array_util_public.h"
 #include "INTEGER_ARRAY_DATASET.h"
+#include "heap_public.h"
 
 int
 main(void)
 {
+
+#if 0
     struct int_array_data_analysis* iada = NULL;
     iada = array_util_init(DATA, DATA_SIZE); //Once init, object is stored in 'iada' then use functions to work on it
    // array_util_destruct(iada);
@@ -42,7 +45,7 @@ main(void)
 //    struct Point* p;
   //  printf("\nP.x =>%p\n",p);
 
-
+#endif
 #define SIZE 17
 
  int DATA[SIZE] = {19, 17, 12, 3, 1, 7, 8, 123, 8, 155, 1, 2, 3, 4, 5, 6, 123};
@@ -63,21 +66,26 @@ main(void)
  printf("\n\n");
 //create_bin_tree(DATA, SIZE);
  printf("\n\n");
- struct heap* hp = heap_init(DATA, SIZE, MIN_HEAP);
- self_balancing_bst_insert(hp->array, hp->curr_size);
+ void* hp = heap_init(DATA, SIZE, MIN_HEAP);
+ self_balancing_bst_insert(hp);
 
- delete_node(hp, -1);
- delete_node(hp, 0);
- self_balancing_bst_insert(hp->array, hp->curr_size);
+ int val;
+ delete_node(hp, -1, &val);
+ delete_node(hp, 0, &val);
+ self_balancing_bst_insert(hp);
 
  update_node(hp, 15, -200);
- self_balancing_bst_insert(hp->array, hp->curr_size);
+ self_balancing_bst_insert(hp);
+
 
  add_node(hp, 666);
  add_node(hp, 667);
  add_node(hp, 668);
- self_balancing_bst_insert(hp->array, hp->curr_size);
+ self_balancing_bst_insert(hp);
  printf("\nPEEK %d\n", peek(hp));
+
+ int* tmp_arr = (int*)malloc(get_heap_size(hp)*sizeof(int));
+ heap_sort(hp, tmp_arr, get_heap_size(hp) + 10);
 // delete_node(DATA,SIZE - 1,15, MAX_HEAP);
 // delete_node(DATA,SIZE - 2,5, MAX_HEAP);
 // update_node(DATA, SIZE - 2, 0, 125, MAX_HEAP);

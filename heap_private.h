@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+#include "enum.h"
+
 struct heap {
 
     //User provided values

@@ -5,16 +5,23 @@
 .
 *****************************************************************************************************************************************************/
 
+//C lib headers
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+//Private headers
 #include "heap_private.h"
+
+//Public headers
 #include "heap_public.h"
 
-static int self_balancing_bst_insert(int* data, int size) {
+int self_balancing_bst_insert(struct heap* hp) {
+
+    int* data = hp->array;
+    int size = hp->curr_size;
 
 //HEAP
     int base = 0; //Base node
@@ -37,46 +44,6 @@ exit:
     printf("\n\n");
    return E_EOK;
 }
-
-/****************************************************************************************************************************************************
-
-	HEAPIFY => This can fix a single violation of the Heap property in one iteration. So when you input an un-ordered Array, we go from
-'n/2' to 0 because 'n/2 + 1 -> n' are all children which are already Heaps. For each iteration from 'n/2' to 0 we run the Heapify, and we keep
-fixing these single violations. 
-
-This is how we build a Heap i.e. Top Down approach because for each iteration we assume that the Left and Right Sub-trees are Heaps and we compare with 
-those and let the violation float down to the proper place.
-
-So we can see that Heapify is usefel in building a new Heap from an un-ordered Array. This takesn O(n) time -> Check the proof.
-
-However what about Updates/Deletes on the Heap?
-
-Delete:
-	1. Deleting the Child Node -> Straight Forward
-	2. Extract Max/Min i.e. Deleting the Root Node -> Replace Root with the Last element, run Heapify and let the Last element float down
-	3. Delete Node in the middle -> Same as above
-
-2. and 3. will take 1 Heapify call so O(logn) time.
-
-Update:
-	1. Update ANY Node -> Delete that node and then add a new node at the last. 
-
-So Delete will take O(logn) and adding a new node will need one more Heapify so it will also take O(logn). Although Update can be done in a better
-way. Just update the Node in question, compare with Leaf and Right sub-trees, if its is fine, then let it bubble up instead of float down. This is
-extra complexity to reduce the time.
-
-****************************************************************************************************************************************************/
-
-
-/****************************************************************************************************************************************************
-.
-. CLRS => "Like insertion sort, but unlike merge sort, heapsort sorts in place: only a constant number of array elements are stored outside the input 
-           array at any time."
-.
-. Heapsort runs in O(nlogn)
-.
-****************************************************************************************************************************************************/
-
 
 /****************************************************************************************************************************************************
 .
@@ -117,12 +84,19 @@ compare(int* array, int node1, int node2, int type) {
         }
 }
 
-static void 
-heapify(struct heap* hp, int parent_id) {
+/*
+.
+. HEAPIFY => This can fix a SINGLE VIOLATION of the Heap property in one iteration. So when you input an un-ordered Array, we go from
+. 'n/2' to 0 because 'n/2 + 1 -> n' are all children which are already Heaps. For each iteration from 'n/2' to 0 we run the Heapify, and we keep
+. fixing these single violations. 
+. 
+. This is how we build a Heap i.e. Top Down approach because for each iteration we assume that the Left and Right Sub-trees are Heaps and we compare with 
+. those and let the violation float down to the proper place.
+.
+*/
 
-    int* array = hp->array;
-    enum HEAP_TYPE type = hp->type;
-    int size = hp->curr_size;
+static void 
+heapify(int* array, int size, int parent_id, enum HEAP_TYPE type) {
 
 //algo
     int l_child_id  = LEFT_CHILD(parent_id);
@@ -144,8 +118,18 @@ heapify(struct heap* hp, int parent_id) {
         array[res_id] = array[parent_id];
         array[parent_id] = temp;
 
-        heapify(hp, res_id);
+        heapify(array, size, res_id, type);
     }
+}
+
+static void
+heapify_wrapper(struct heap* hp, int parent_id) {
+
+    int* array = hp->array;
+    int size = hp->curr_size;
+    enum HEAP_TYPE type = hp->type;
+
+    heapify(array, size, parent_id, type);
 }
 
 static void
@@ -220,6 +204,7 @@ heap_init(int* array, int size, enum HEAP_TYPE type) {
 
     struct heap* hp = (struct heap*)calloc(1, sizeof(struct heap)); //Init structure object
     if(hp == NULL) {
+        fprintf(stderr, "%sCalloc failed", ERROR); 
         perror("Error");
         return NULL;
     }
@@ -228,6 +213,7 @@ heap_init(int* array, int size, enum HEAP_TYPE type) {
 
     hp->array = (int*)calloc(1, size*sizeof(int));
     if(hp->array == NULL) {
+        fprintf(stderr, "%sCalloc failed", ERROR); 
         perror("Error");
         free(hp);	//Before any error return, free/unlock ALL objects in use
         return NULL;
@@ -243,7 +229,7 @@ heap_init(int* array, int size, enum HEAP_TYPE type) {
     pthread_mutex_init(&hp->lock_heap, NULL);
 
     for(int i = size/2; i >=0; i--) {
-        heapify(hp, i);
+        heapify_wrapper(hp, i);
     }
 
     hp->is_heapify_run = true;
@@ -265,14 +251,20 @@ heap_init(int* array, int size, enum HEAP_TYPE type) {
 .
 . Copy the last element to the index
 .
-. Run Heapify so we can do a top-down of the last element - try to fit it somewhere, since the upper half of tree will always be a heap
+. If the last element is at index then the bottom half is NOT a Heap anymore, BUT the top half is a heap, so we need to sink the element down
+.
+. For Sinking the element we use Heapify i.e. try to fit in somewhere in the Tree below. HOWEVER
+.
+. If a Leaf Node is deleted there is a possibility that the top half is NOT a heap, in such cases we 'sift_up'
 .
 . O(logn) time for this delete operation
+.
+. Can also be used to extract the root and it will put the value in 'val'
 .
 ****************************************************************************************************************************************************/
 
 int 
-delete_node(struct heap* hp, int index) {
+delete_node(struct heap* hp, int index, int* val) {
 
 #define ERROR	"\nError:   (delete_node) => "
 
@@ -297,13 +289,18 @@ delete_node(struct heap* hp, int index) {
     int* array = hp->array;
     int parent_id = PARENT(index);
 
+    //prevent a seg fault
+    if(val != NULL) {
+        *val = array[index];
+    }
+
     array[index] = array[hp->curr_size-- - 1];
 
     //sift-up -> opposite of heapify
     if(((hp->type == MAX_HEAP) && (array[parent_id] < array[index])) || ((hp->type == MIN_HEAP) && (array[parent_id] > array[index]))) {
         sift_up(hp, index);   
     } else {
-        heapify(hp, index);
+        heapify_wrapper(hp, index);
     }
 
     pthread_mutex_unlock(&(hp->lock_heap));
@@ -315,11 +312,6 @@ delete_node(struct heap* hp, int index) {
 
 /****************************************************************************************************************************************************
 .
-. Initializing the Heap with 3 inputs. Array, size and type.
-.
-. We will run Heapify. Init takes O(n) time.
-.
-. Init works on the original data. It modifies the original array and converts it into a Heap
 .
 ****************************************************************************************************************************************************/
 
@@ -348,7 +340,7 @@ update_node(struct heap* hp, int index, int value) {
     if(((hp->type == MAX_HEAP) && (array[parent_id] < array[index])) || ((hp->type == MIN_HEAP) && (array[parent_id] > array[index]))) {
         sift_up(hp, index);   
     } else {
-        heapify(hp, index);
+        heapify_wrapper(hp, index);
     }
     
     pthread_mutex_unlock(&(hp->lock_heap));
@@ -441,9 +433,113 @@ peek(struct heap* hp) {
         return E_INVAL_PARAM;
     }
 
+    int res = hp->array[0]; //We CANNOT just return 'hp->array[0]' coz it can be a transient value from 'delete' operation, so we need Mutexed extraction
+
     pthread_mutex_unlock(&(hp->lock_heap));
 
-    return hp->array[0];
+    //....hp->array[0] CAN change here. It can either be a transient WRONG value or a NEW RIGHT value, BUT our PEEK will NEVER be a transient WRONG value
+    //it WILL ONLY be a Stale value that might have been deleted/updated by now
+
+    return res;
+
+#undef ERROR
+}
+
+/****************************************************************************************************************************************************
+.
+. Get Heap Size returns the current size of the heap
+.
+****************************************************************************************************************************************************/
+
+int
+get_heap_size(struct heap* hp) {
+
+    if(!self_assert(hp)) return E_INIT;
+
+    pthread_mutex_lock(&(hp->lock_heap));
+
+    int size = hp->curr_size;
+
+    pthread_mutex_unlock(&(hp->lock_heap));
+
+    return size;
+}
+
+/****************************************************************************************************************************************************
+.
+. CLRS => "Like insertion sort, but unlike merge sort, heapsort sorts in place: only a constant number of array elements are stored outside the input 
+           array at any time."
+.
+. Heapsort runs in O(nlogn)
+.
+. Assumption: size of array is same as curr_size in heap
+.
+****************************************************************************************************************************************************/
+
+int
+heap_sort(struct heap* hp, int* array, int size) {
+
+#define ERROR	"\nError:   (heapsort) => "
+
+    if(!self_assert(hp)) return E_INIT;
+
+    if(array == NULL) {
+        fprintf(stderr, "%sArray cannot be NULL", ERROR); 
+        return E_INVAL_PARAM;
+    }
+
+    if(size <= 0) {
+        fprintf(stderr, "%sSize of Array [%d] cannot be less than 1", ERROR, size); 
+        return E_INVAL_PARAM;
+    }
+
+    pthread_mutex_lock(&(hp->lock_heap));
+
+    enum HEAP_TYPE type = hp->type;
+    int hp_size = hp->curr_size;
+
+    if(size < hp_size) {
+        fprintf(stderr, "%sSize of Array [%d] should be more than size of current heap [%d]", ERROR, size, hp_size); 
+        pthread_mutex_unlock(&(hp->lock_heap));
+        return E_INVAL_PARAM;
+    }
+
+    //create new temporary array and store the heap in it
+    int* hp_arr = (int*)calloc(1, hp_size * sizeof(int));
+    
+    if(hp_arr == NULL) {
+        fprintf(stderr, "%sCalloc failed", ERROR); 
+        perror("Error");
+        pthread_mutex_unlock(&(hp->lock_heap));
+        return E_CALLOC;
+    }
+
+    memcpy(hp_arr, hp->array, hp_size*sizeof(int));
+
+    //heap has been copied into new temporary memory, now we do NOT need to lock the heap structure
+    pthread_mutex_unlock(&(hp->lock_heap));
+
+    //If it is a Min-Heap, convert to a Max-Heap [ O(n) ]
+    if(type == MIN_HEAP) {
+        for(int i = hp_size/2; i >=0; i--) {
+            heapify(hp_arr, hp_size, i, MAX_HEAP);
+        }
+    }
+
+    int last  = hp_size - 1;
+
+    for(int i = 0; i < hp_size; i++) {
+
+        //if array goes OOB it can seg-fault
+        array[last] = hp_arr[0];
+        hp_arr[0] = hp_arr[last];
+        heapify(hp_arr, last + 1, 0, MAX_HEAP);
+        last--;
+    }
+
+    free(hp_arr);
+
+    return E_EOK;
 
 #undef ERROR
 }
