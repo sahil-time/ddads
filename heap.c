@@ -211,6 +211,11 @@ heap_init(int* array, int size, enum HEAP_TYPE type) {
 
     hp->obj_id = hp;
 
+    if((size > MAX_ELEMENTS) && (MAX_ELEMENTS != 0)) {
+        fprintf(stderr, "%sInput size [%d] greater than Heap max allowed size [%d] so defaulting to max", WARNING, size, MAX_ELEMENTS); 
+        size = MAX_ELEMENTS;
+    }
+
     hp->array = (int*)calloc(1, size*sizeof(int));
     if(hp->array == NULL) {
         fprintf(stderr, "%sCalloc failed", ERROR); 
@@ -368,20 +373,24 @@ add_node(struct heap* hp, int value) {
     //Realloc logic
     if(hp->curr_size == hp->max_size) {
 
-        //Size already maxed out
-        if(hp->max_size == hp->max_elem) {
-            fprintf(stderr, "%sHeap size is maxed out, cannot add new nodes", ERROR);
-            pthread_mutex_unlock(&(hp->lock_heap));
-            return E_REALLOC;
-        }
-
         int new_size = 0;
-        if(2*hp->max_size > hp->max_elem) {
-            new_size = hp->max_elem;
-            fprintf(stderr, "%sHeap size is maxed out", WARNING);
+
+        if(hp->max_elem != 0) { //0 Indicates NO Upper limit
+            if(hp->max_size == hp->max_elem) {
+                fprintf(stderr, "%sHeap size is maxed out, cannot add new nodes", ERROR);
+                pthread_mutex_unlock(&(hp->lock_heap));
+                return E_REALLOC;
+            }
+
+            if(2*hp->max_size > hp->max_elem) {
+                new_size = hp->max_elem;
+                fprintf(stderr, "%sHeap size is maxed out", WARNING);
+            } else {
+                new_size = 2*hp->max_size;
+            }
         } else {
             new_size = 2*hp->max_size;
-        }      
+        }
 
         //realloc returns a NULL pointer if it fails, so do NOT make 'hp->array = realloc(...)' or in case of failure 'hp->array' will become NULL
         int* realloc_array = realloc(hp->array, new_size*sizeof(int));

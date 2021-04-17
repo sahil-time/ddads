@@ -11,7 +11,7 @@ struct heap {
     //User provided values
     int* array; //Un-orderdered array that needs to be heapified
     int max_size;
-#define MAX_ELEMENTS 25
+#define MAX_ELEMENTS 0
     int max_elem; //This is the max size of array that we will allow. It equals MAX_ELEMENTS
     enum HEAP_TYPE type;
 

@@ -5,9 +5,13 @@
 #include "INTEGER_ARRAY_DATASET.h"
 #include "heap_public.h"
 
-int
-main(void)
-{
+int main(int argc, char** argv) {
+
+//=============================================== ERROR CHECKING ===============================================
+
+ //   int xx = atoi(argv[1]);
+
+//=============================================== PARSE FILES ===============================================
 
 #if 0
     struct int_array_data_analysis* iada = NULL;
@@ -48,25 +52,56 @@ main(void)
 #endif
 #define SIZE 17
 
- int DATA[SIZE] = {19, 17, 12, 3, 1, 7, 8, 123, 8, 155, 1, 2, 3, 4, 5, 6, 123};
+ //int DATA[SIZE] = {19, 17, 12, 3, 1, 7, 8, 123, 8, 155, 1, 2, 3, 4, 5, 6, 123};
 
 //{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 };
 
- printf("========= DATA ========\n");
- for(int i = 0; i < SIZE; i++) {
-     printf(" %d ", DATA[i]);
- }
-
- printf("\n\n");
  int* arr = NULL;
   heap_init(arr, 2, 4);
-  heap_init(DATA, 0, 4);
+ heap_init(DATA, 0, 4);
  printf("\n\n");
  //self_balancing_bst_insert(DATA, SIZE);
  printf("\n\n");
 //create_bin_tree(DATA, SIZE);
- printf("\n\n");
- void* hp = heap_init(DATA, SIZE, MIN_HEAP);
+ printf("\n\nHERE\n\n");
+
+ void* hp = heap_init(DATA, DATA_SIZE, MIN_HEAP);
+
+ int* tmp_arr = (int*)malloc(get_heap_size(hp)*sizeof(int));
+ heap_sort(hp, tmp_arr, get_heap_size(hp));
+
+
+ int tmp = tmp_arr[0];
+ for(int i = 1; i < DATA_SIZE; i++) {
+
+    printf(" %d ", tmp);
+
+
+     if(tmp > tmp_arr[i]) {
+          printf("\n\nFAILED\n\n");
+          break;
+      }
+
+     tmp = tmp_arr[i];
+
+ }
+
+ 
+
+ return 0;
+
+#if 0
+ //kth largest
+ for(int i = xx; i < SIZE; i++) {
+    int top = peek(hp);
+    if(top < DATA[i]) {
+        delete_node(hp, 0, NULL);
+        add_node(hp, DATA[i]); 
+    }
+ }
+
+ printf("\n\nKth largest = %d\n\n", peek(hp));
+  
  self_balancing_bst_insert(hp);
 
  int val;
@@ -89,6 +124,10 @@ main(void)
 // delete_node(DATA,SIZE - 1,15, MAX_HEAP);
 // delete_node(DATA,SIZE - 2,5, MAX_HEAP);
 // update_node(DATA, SIZE - 2, 0, 125, MAX_HEAP);
+
+  
     
     return 0;
+
+#endif
 }
