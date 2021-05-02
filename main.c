@@ -3,6 +3,7 @@
 
 #include "array_util_public.h"
 #include "INTEGER_ARRAY_DATASET.h"
+#include "STONKS_DATASET.h"
 #include "heap_public.h"
 
 int main(int argc, char** argv) {
@@ -13,9 +14,9 @@ int main(int argc, char** argv) {
 
 //=============================================== PARSE FILES ===============================================
 
-#if 0
     struct int_array_data_analysis* iada = NULL;
-    iada = array_util_init(DATA, DATA_SIZE); //Once init, object is stored in 'iada' then use functions to work on it
+    printf("....%d\n", sizeof(STONKS_DATA)/sizeof(int));
+    iada = array_util_init(STONKS_DATA, sizeof(STONKS_DATA)/sizeof(int)); //Once init, object is stored in 'iada' then use functions to work on it
    // array_util_destruct(iada);
     
 
@@ -33,11 +34,12 @@ int main(int argc, char** argv) {
     end = clock();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("\nTime Taken for Mean Median Mode: %f %d\n", time_spent,rc);
-    array_util_destruct(iada);
+//    array_util_destruct(iada);
 
     //Print all Data Analysis
     array_util_print_all(iada);
 
+#if 0
 //    self_balancing_bst_insert(DATA, DATA_SIZE);
 
 //    int y = 5;
@@ -49,7 +51,6 @@ int main(int argc, char** argv) {
 //    struct Point* p;
   //  printf("\nP.x =>%p\n",p);
 
-#endif
 #define SIZE 17
 
  //int DATA[SIZE] = {19, 17, 12, 3, 1, 7, 8, 123, 8, 155, 1, 2, 3, 4, 5, 6, 123};
@@ -85,6 +86,13 @@ int main(int argc, char** argv) {
      tmp = tmp_arr[i];
 
  }
+
+ free(tmp_arr);
+
+ quicksort(DATA, DATA_SIZE);
+
+#endif
+ 
 
  
 

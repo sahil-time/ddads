@@ -43,6 +43,17 @@ struct int_array_stats {
     int* sorted_arr;
 };
 
+struct int_array_stonks_stats {
+    int num_positive; //Total surges in given period
+    int num_negative; //Total plummets in given period
+    int max_contig_pos;	//Maximum contiguous surges
+    int max_contig_neg;	//Maximum contiguous plummets
+    int* arr_contig_pos_dist;	//Distribution of contiguous positives (use in sorted)
+    int* arr_contig_pos_cnt;
+    int* arr_contig_neg_dist;	//Distribution of contiguous negatives (use in sorted)
+    int* arr_contig_neg_cnt;
+};
+
 struct int_array_data_analysis {
 
     struct int_array_data_analysis* obj_id; //Obj Memory Location
@@ -61,6 +72,11 @@ struct int_array_data_analysis {
     struct int_array_stats* stats; //Sorts array also coz Median/Mode need it
     bool is_stats_run;
     pthread_mutex_t lock_stats;
+
+    //Advanced Statistics for Stonks
+    struct int_array_stonks_stats* stonks_stats;
+    bool is_stonks_stats_run;
+    pthread_mutex_t lock_stonks_stats;
 };
 
 #endif

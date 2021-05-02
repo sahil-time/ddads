@@ -1,13 +1,118 @@
+#Command Line Arguments Python
+#sys.argv[1] - Day1
+#sys.argv[2] - open/close
+#sys.argv[3] - Day2
+#sys.argv[4] - open/close
+#sys.argv[5] - Options Value
+#sys.argv[6] - Stock Name   
+
 import sys
 import os
 import csv
 import heapq
 import datetime
 from datetime import date
+import requests
+import json
+import pandas as pd
+
+link = "https://finance.yahoo.com/calendar/earnings/?symbol=" + sys.argv[6]
+f = requests.get(link)
+x = json.loads(f.text.split("\"results\":")[1].split(",\"columns\":")[0] + "}")
+
+y = x["rows"]
+print(type(y))
+
+pd.set_option("display.max_rows", None, "display.max_columns", None)
+df = pd.DataFrame(y)
+df["startdatetime"] = df["startdatetime"].str.split('T', expand = True)
+
+l = df[["startdatetime", "epssurprisepct"]]
+
+dic = l.set_index('startdatetime').T.to_dict('list')
+
+
+#print(df["startdatetime"].split("T")[0])
+
+
+
+#y = y.replace("\'", "\"")
+#y = y.replace("None", "null")
+#d = json.loads(y)
+#print(d)
+
+
+#import simfin as sf
+#
+## if you haven't installed requests, get it via 'pip install requests'
+#import requests
+## if you haven't installed pandas, get it via 'pip install pandas'
+#import xlsxwriter
+#
+#import pandas as pd
+#
+## here you have to enter your actual API key from SimFin
+#api_key = "pYXo4gt2Q2AbwQD08k4qMa8SWwQVQJVs"
+#
+## list of tickers we want to get data for
+#tickers = ["AAPL"]
+#
+## define the periods that we want to retrieve
+#periods = ["q1", "q2", "q3", "q4"]
+#year_start = 2019
+#year_end = 2020
+#
+## request url for all financial statements
+#request_url = 'https://simfin.com/api/v2/companies/statements'
+#
+## variable to store the names of the columns
+#columns = []
+## variable to store our data
+#output = []
+#
+## if you don't have a SimFin+ subscription, you can only request data for single companies and one period at a time (with SimFin+, you can request multiple tickers and periods at once)
+#for ticker in tickers:
+#    # loop through years:
+#    for year in range(year_start, year_end + 1):
+#        # loop through periods
+#        for period in periods:
+#
+#            # define the parameters for the query
+#            parameters = {"statement": "pl", "ticker": ticker, "period": period, "fyear": year, "api-key": api_key}
+#            # make the request
+#            request = requests.get(request_url, parameters)
+#
+#            # convert response to json and take 0th index as we only requested one ticker (if more than one ticker is requested, the data for the nth ticker will be at the nth position in the result returned from the API)
+#            print(request.json())
+#            data = request.json()[0]
+#
+#            # make sure that data was found
+#            if data['found'] and len(data['data']) > 0:
+#                # add the column descriptions once only
+#                if len(columns) == 0:
+#                    columns = data['columns']
+#                # add the data
+#                output += data['data']
+#
+## make dataframe from output
+#df = pd.DataFrame(output, columns=columns)
+#
+## save to XLSX
+## set up the XLSX writer
+#writer = pd.ExcelWriter("simfin_data.xlsx", engine='xlsxwriter')
+## write data and close file
+#df.to_excel(writer)
+#writer.save()
+#writer.close()
+#
+
+
+###########################################################################################################################################################################
 
 #Usage:
 #	python3 stonks.py m o f c 2500 AMZN.csv
-#	Download AMZN.csv etc. from https://finance.yahoo.com/quote/AMZN/history?period1=1609632000&period2=1619049600&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true
+#	Lookup AMZN.csv etc. from https://finance.yahoo.com/quote/AMZN/history?period1=1609632000&period2=1619049600&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true
+#	Download AMZN.csv etc. from https://query1.finance.yahoo.com/v7/finance/download/AMZN?period1=1609632000&period2=1619049600&interval=1d&events=history&includeAdjustedClose=true
 
 GLOBAL_LIST = []
 
@@ -21,13 +126,6 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-
-#Command Line Arguments Python
-#sys.argv[1] - Day1
-#sys.argv[2] - open/close
-#sys.argv[3] - Day2
-#sys.argv[4] - open/close
-#sys.argv[5] - Options Value
 
 ################################################################################
 
@@ -78,7 +176,18 @@ def pretty_print(day1, day2, date, diff):
 
 ################################################################################
 
-with open(sys.argv[6], newline='') as csvfile:
+company_data = os.getcwd() + "/" + sys.argv[6] + ".csv"
+try:
+    os.remove(company_data)
+except:
+    print("...")
+url = "https://query1.finance.yahoo.com/v7/finance/download/" + sys.argv[6] + "?period1=863654400&period2=1619913600&interval=1d&events=history&includeAdjustedClose=true"
+r = requests.get(url, allow_redirects=True)
+open(company_data, 'wb').write(r.content)
+
+begin = False
+
+with open(company_data, newline='') as csvfile:
     print("\n")
 
     try:
@@ -109,11 +218,14 @@ with open(sys.argv[6], newline='') as csvfile:
         date_time_str = row['Date']
         date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d')
 
+        if date_time_str in dic:
+            print("................................EARNINGS : " + date_time_str + " => " + bcolors.BOLD + bcolors.OKGREEN + str(dic[date_time_str]) + bcolors.ENDC + "\n")
 
         if(date_time_obj.weekday() == day1):
             day1_price = row[day1_time]
+            begin = True
 
-        if(date_time_obj.weekday() == day2):
+        if((date_time_obj.weekday() == day2) and (begin == True)):
             day2_price = row[day2_time]
             diff = float(day2_price) - float(day1_price)
             GLOBAL_LIST.append(diff)	#Do data analysis on this list
@@ -143,11 +255,15 @@ total_pos = 0
 total_neg = 0
 max_contig_pos = 0
 max_contig_neg = 0
+max_pos = 0
+max_neg = 0
 
 if GLOBAL_LIST[0] < 0:
     contig_pos = 0
+    max_neg = GLOBAL_LIST[0]    
 else:
     contig_pos = 1
+    max_pos = GLOBAL_LIST[0]
 
 tmp = 0
 
@@ -162,6 +278,8 @@ for val in GLOBAL_LIST:
 
         total_neg += 1
         tmp  += 1
+        if (val < max_neg):
+            max_neg = val
     else:
         #Logic to calculate max contiguous surges and plummets
         if(contig_pos == 0):
@@ -172,11 +290,19 @@ for val in GLOBAL_LIST:
 
         total_pos += 1
         tmp += 1
+        if (val > max_pos):
+            max_pos = val
 
-print("Total Surges: " + str(total_pos) + "\nTotal Plummets: " + str(total_neg) + "\nMax Continuous Surges: " + str(max_contig_pos) + "\nMax Continuous Plummets: " + str(max_contig_neg))
+print("Total Surges: " + str(total_pos) + 
+      "\nTotal Plummets: " + str(total_neg) + 
+      "\nMax Continuous Surges: " + str(max_contig_pos) + 
+      "\nMax Continuous Plummets: " + str(max_contig_neg) +
+      "\nMax Positive Jump: " + str(max_pos) +
+      "\nMax Negative Jump: " + str(max_neg))
 print("\n")
 
 ################# HEAP EXPERIMENT #################
+"""
 li = [9, 5, 4, 3, 2, 1]
 heapq.heapify(li)
 print(li)
@@ -185,3 +311,4 @@ print(li)
 heapq.heapreplace(li, -1)
 print(heapq.nlargest(3,li))
 print(li)
+"""
