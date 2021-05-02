@@ -1,10 +1,18 @@
+################################################################################################################################################################
+
 #Command Line Arguments Python
 #sys.argv[1] - Day1
 #sys.argv[2] - open/close
 #sys.argv[3] - Day2
 #sys.argv[4] - open/close
 #sys.argv[5] - Options Value
-#sys.argv[6] - Stock Name   
+#sys.argv[6] - Stock Name
+
+#USAGE
+#	python3 stonks.py m o f c 2500 AMZN
+#	python3 stonks.py <day1> <open/close> <day2> <open/close> <options_val> <company_symbol>
+
+################################################################################################################################################################
 
 import sys
 import os
@@ -16,101 +24,106 @@ import requests
 import json
 import pandas as pd
 
+################################################################################
+
+#PARSE EARNINGS REPORT FROM YAHOO
+
+################################################################################
+
+### Get Earnings Webpage for the specific Stonk
 link = "https://finance.yahoo.com/calendar/earnings/?symbol=" + sys.argv[6]
 f = requests.get(link)
+### Once you get it, get the block of page which has ONLY the earnings Table and load in Json
 x = json.loads(f.text.split("\"results\":")[1].split(",\"columns\":")[0] + "}")
 
+### Get the value of the key i.e. all the earnings report
 y = x["rows"]
-print(type(y))
 
+### This is a table, so parse using DataFrame, its basically like a SQL table
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 df = pd.DataFrame(y)
+
+### Once parsed, make 'date' format more in tune with the rest of the program
 df["startdatetime"] = df["startdatetime"].str.split('T', expand = True)
 
+### Get 2 columns from the DataFrame, it has many more as shown on Yahoo website
 l = df[["startdatetime", "epssurprisepct"]]
 
+### Convert to dictionary i.e. [ key - value ] => [ date of earnings - estimate beat or not ]
 dic = l.set_index('startdatetime').T.to_dict('list')
 
+### Below uses Simfin i.e. website that has LOADS of Stonk data like Kaggle but updated daily, Costs money so we using Yahoo
+"""
 
-#print(df["startdatetime"].split("T")[0])
+import simfin as sf
 
+# if you haven't installed requests, get it via 'pip install requests'
+import requests
+# if you haven't installed pandas, get it via 'pip install pandas'
+import xlsxwriter
 
+import pandas as pd
 
-#y = y.replace("\'", "\"")
-#y = y.replace("None", "null")
-#d = json.loads(y)
-#print(d)
+# here you have to enter your actual API key from SimFin
+api_key = "pYXo4gt2Q2AbwQD08k4qMa8SWwQVQJVs"
 
+# list of tickers we want to get data for
+tickers = ["AAPL"]
 
-#import simfin as sf
-#
-## if you haven't installed requests, get it via 'pip install requests'
-#import requests
-## if you haven't installed pandas, get it via 'pip install pandas'
-#import xlsxwriter
-#
-#import pandas as pd
-#
-## here you have to enter your actual API key from SimFin
-#api_key = "pYXo4gt2Q2AbwQD08k4qMa8SWwQVQJVs"
-#
-## list of tickers we want to get data for
-#tickers = ["AAPL"]
-#
-## define the periods that we want to retrieve
-#periods = ["q1", "q2", "q3", "q4"]
-#year_start = 2019
-#year_end = 2020
-#
-## request url for all financial statements
-#request_url = 'https://simfin.com/api/v2/companies/statements'
-#
-## variable to store the names of the columns
-#columns = []
-## variable to store our data
-#output = []
-#
-## if you don't have a SimFin+ subscription, you can only request data for single companies and one period at a time (with SimFin+, you can request multiple tickers and periods at once)
-#for ticker in tickers:
-#    # loop through years:
-#    for year in range(year_start, year_end + 1):
-#        # loop through periods
-#        for period in periods:
-#
-#            # define the parameters for the query
-#            parameters = {"statement": "pl", "ticker": ticker, "period": period, "fyear": year, "api-key": api_key}
-#            # make the request
-#            request = requests.get(request_url, parameters)
-#
-#            # convert response to json and take 0th index as we only requested one ticker (if more than one ticker is requested, the data for the nth ticker will be at the nth position in the result returned from the API)
-#            print(request.json())
-#            data = request.json()[0]
-#
-#            # make sure that data was found
-#            if data['found'] and len(data['data']) > 0:
-#                # add the column descriptions once only
-#                if len(columns) == 0:
-#                    columns = data['columns']
-#                # add the data
-#                output += data['data']
-#
-## make dataframe from output
-#df = pd.DataFrame(output, columns=columns)
-#
-## save to XLSX
-## set up the XLSX writer
-#writer = pd.ExcelWriter("simfin_data.xlsx", engine='xlsxwriter')
-## write data and close file
-#df.to_excel(writer)
-#writer.save()
-#writer.close()
-#
+# define the periods that we want to retrieve
+periods = ["q1", "q2", "q3", "q4"]
+year_start = 2019
+year_end = 2020
 
+# request url for all financial statements
+request_url = 'https://simfin.com/api/v2/companies/statements'
+
+# variable to store the names of the columns
+columns = []
+# variable to store our data
+output = []
+
+# if you don't have a SimFin+ subscription, you can only request data for single companies and one period at a time (with SimFin+, you can request multiple tickers and periods at once)
+for ticker in tickers:
+    # loop through years:
+    for year in range(year_start, year_end + 1):
+        # loop through periods
+        for period in periods:
+
+            # define the parameters for the query
+            parameters = {"statement": "pl", "ticker": ticker, "period": period, "fyear": year, "api-key": api_key}
+            # make the request
+            request = requests.get(request_url, parameters)
+
+            # convert response to json and take 0th index as we only requested one ticker (if more than one ticker is requested, the data for the nth ticker will be at the nth position in the result returned from the API)
+            print(request.json())
+            data = request.json()[0]
+
+            # make sure that data was found
+            if data['found'] and len(data['data']) > 0:
+                # add the column descriptions once only
+                if len(columns) == 0:
+                    columns = data['columns']
+                # add the data
+                output += data['data']
+
+# make dataframe from output
+df = pd.DataFrame(output, columns=columns)
+
+# save to XLSX
+# set up the XLSX writer
+writer = pd.ExcelWriter("simfin_data.xlsx", engine='xlsxwriter')
+# write data and close file
+df.to_excel(writer)
+writer.save()
+writer.close()
+
+"""
 
 ###########################################################################################################################################################################
 
 #Usage:
-#	python3 stonks.py m o f c 2500 AMZN.csv
+#	python3 stonks.py m o f c 2500 AMZN
 #	Lookup AMZN.csv etc. from https://finance.yahoo.com/quote/AMZN/history?period1=1609632000&period2=1619049600&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true
 #	Download AMZN.csv etc. from https://query1.finance.yahoo.com/v7/finance/download/AMZN?period1=1609632000&period2=1619049600&interval=1d&events=history&includeAdjustedClose=true
 
