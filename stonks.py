@@ -198,8 +198,6 @@ url = "https://query1.finance.yahoo.com/v7/finance/download/" + sys.argv[6] + "?
 r = requests.get(url, allow_redirects=True)
 open(company_data, 'wb').write(r.content)
 
-begin = False
-
 with open(company_data, newline='') as csvfile:
     print("\n")
 
@@ -226,6 +224,10 @@ with open(company_data, newline='') as csvfile:
     file1.write("\nconst int STONKS_DATA[] = {\n")
     file1.close()
 
+    begin = False
+
+### Caveat: If ANY day is a Holiday, that week will NOT show up
+
 #Calculate
     for row in reader:
         date_time_str = row['Date']
@@ -249,6 +251,7 @@ with open(company_data, newline='') as csvfile:
                 gross = gross + 100*(diff) - options_val
 
             pretty_print(day1, day2, date_time_str, diff)
+            begin = False
 
     #Footers in the file
     file1 = open("STONKS_DATASET.h", "a")
